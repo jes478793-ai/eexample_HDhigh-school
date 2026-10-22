@@ -3,850 +3,615 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우주 비행사 피하기 게임</title>
+    <title>우주 대탈출</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background: #0b0f19;
-            color: #ffffff;
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
+            font-family: 'Jua', sans-serif;
             touch-action: none;
-        }
-
-        #game-container {
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            border: 4px solid #334155;
-            border-radius: 12px;
-            overflow: hidden;
-            background-color: #000;
-        }
-
-        /* 화면 흔들림 CSS 애니메이션 클래스 */
-        .shake {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-4px, 2px, 0); }
-            20%, 80% { transform: translate3d(6px, -4px, 0); }
-            30%, 50%, 70% { transform: translate3d(-8px, 6px, 0); }
-            40%, 60% { transform: translate3d(8px, -6px, 0); }
-        }
-
-        canvas {
-            display: block;
-            background: url('bg.png') repeat;
-            background-size: 300px 300px;
-        }
-
-        .ui-overlay {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
-
-        /* 점수 상승 / 레벨업 시 반짝임 효과 클래스 */
-        .score-pop {
-            animation: scorePop 0.3s ease-out;
-            color: #fde047 !important;
-            text-shadow: 0 0 12px #fde047, 0 0 20px #eab308 !important;
-        }
-
-        @keyframes scorePop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-
-        /* 캔버스 화면 전체 점수 획득 반짝임オーバー레이 */
-        .flash-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            box-shadow: inset 0 0 35px rgba(56, 189, 248, 0.4);
-            animation: flashFade 0.25s ease-out forwards;
-        }
-
-        /* 100점 달성 시 나오는 칭찬 팝업 텍스트 효과 */
-        .praise-text {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            font-size: 32px;
-            font-weight: 900;
-            color: #4ade80;
-            text-shadow: 0 0 20px #22c55e, 0 0 40px #15803d;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 20;
-            animation: praisePop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        /* 레벨 10 단위 상승 시 화면 전체 화려한 반짝임 효과 */
-        .level10-flash-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: inset 0 0 80px #38bdf8, 0 0 100px #f43f5e;
-            animation: level10Flash 0.6s ease-out forwards;
-            z-index: 15;
-        }
-
-        @keyframes level10Flash {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; background-color: rgba(56, 189, 248, 0.5); }
-            100% { opacity: 0; transform: scale(1.02); }
-        }
-
-        @keyframes praisePop {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
-            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-            70% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-            100% { opacity: 0; transform: translate(-50%, -60%) scale(1.1); }
-        }
-
-        @keyframes flashFade {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        #start-screen, #gameover-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(11, 15, 25, 0.85);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-
-        h1 {
-            margin: 0 0 10px 0;
-            font-size: 28px;
-            color: #38bdf8;
-            text-align: center;
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-        }
-
-        p {
-            margin: 5px 0 20px 0;
-            color: #94a3b8;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover {
-            background: linear-gradient(135deg, #0369a1, #075985);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.6);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .controls-hint {
-            margin-top: 15px;
-            font-size: 12px;
-            color: #64748b;
-            text-align: center;
-        }
-
-        .mobile-controls {
-            display: flex;
-            justify-content: space-between;
-            width: 400px;
-            margin-top: 15px;
-        }
-
-        .ctrl-btn {
-            background: #1e293b;
-            color: #f8fafc;
-            border: 2px solid #334155;
-            font-size: 24px;
-            width: 100px;
-            height: 60px;
-            border-radius: 10px;
-            cursor: pointer;
             user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-
-        .ctrl-btn:active {
-            background: #334155;
-            transform: scale(0.95);
-        }
-
-        @media (max-width: 450px) {
-            #game-container {
-                width: 100vw;
-                height: 500px;
-                border-radius: 0;
-                border-left: none;
-                border-right: none;
-            }
-            canvas {
-                width: 100%;
-                height: 100%;
-            }
-            .mobile-controls {
-                width: 90vw;
-            }
+        /* Custom canvas styling */
+        #gameCanvas {
+            background: radial-gradient(circle at center, #1b1b3a 0%, #0a0a16 100%);
+            display: block;
+            width: 100%;
+            max-width: 480px;
+            height: 640px;
+            margin: 0 auto;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div id="game-container">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <div id="flash-effect"></div>
-        <div id="praise-container"></div>
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl p-4 flex flex-col items-center border border-slate-700">
         
-        <div class="ui-overlay">
-            <span id="score-display">점수: 0점</span>
-            <span id="level-display" style="color: #38bdf8;">LV: 1</span>
-            <span id="highscore-display">최고: 0점</span>
+        <!-- Header -->
+        <div class="text-center mb-3">
+            <h1 class="text-3xl text-yellow-300 drop-shadow-md">🐱 우주 대탈출 🚀</h1>
+            <p class="text-xs text-slate-400 mt-1">목표: 운석을 피해 오래 살아남기!</p>
         </div>
 
-        <div id="start-screen">
-            <h1>우주 비행사 피하기</h1>
-            <p>메테오를 피해 우주를 누비세요!</p>
-            <button class="btn" onclick="startGame()">게임 시작</button>
-            <div class="controls-hint">상하좌우 방향키(← → ↑ ↓) 또는 W/A/S/D 키를 사용하세요</div>
+        <!-- Game Screen Container -->
+        <div class="relative w-full flex justify-center">
+            <!-- Mute/Unmute Button in Top-Right Corner -->
+            <button id="soundToggleBtn" class="absolute top-3 right-3 z-20 bg-slate-900/80 hover:bg-slate-700 text-yellow-300 border border-slate-600 rounded-full p-2 text-xl transition transform active:scale-95 focus:outline-none" title="소리 켜기/끄기">
+                🔊
+            </button>
+
+            <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+            <!-- Touch Controls Overlay for Mobile (Hidden on MD screens and above) -->
+            <div id="touchControls" class="absolute bottom-4 left-0 right-0 flex justify-between px-6 z-20 pointer-events-none md:hidden">
+                <!-- D-Pad Directional Cluster -->
+                <div class="grid grid-cols-3 gap-1 pointer-events-auto">
+                    <div></div>
+                    <button id="upBtn" class="w-[70px] h-[70px] bg-slate-900/60 active:bg-yellow-500/80 border-2 border-slate-400/50 rounded-2xl flex items-center justify-center text-2xl text-yellow-300 backdrop-blur-sm shadow-lg select-none active:scale-95 transition-transform touch-none">▲</button>
+                    <div></div>
+                    <button id="leftBtn" class="w-[70px] h-[70px] bg-slate-900/60 active:bg-yellow-500/80 border-2 border-slate-400/50 rounded-2xl flex items-center justify-center text-2xl text-yellow-300 backdrop-blur-sm shadow-lg select-none active:scale-95 transition-transform touch-none">◀</button>
+                    <div></div>
+                    <button id="rightBtn" class="w-[70px] h-[70px] bg-slate-900/60 active:bg-yellow-500/80 border-2 border-slate-400/50 rounded-2xl flex items-center justify-center text-2xl text-yellow-300 backdrop-blur-sm shadow-lg select-none active:scale-95 transition-transform touch-none">▶</button>
+                    <div></div>
+                    <button id="downBtn" class="w-[70px] h-[70px] bg-slate-900/60 active:bg-yellow-500/80 border-2 border-slate-400/50 rounded-2xl flex items-center justify-center text-2xl text-yellow-300 backdrop-blur-sm shadow-lg select-none active:scale-95 transition-transform touch-none">▼</button>
+                    <div></div>
+                </div>
+            </div>
+
+            <!-- Start Screen Overlay -->
+            <div id="startScreen" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-6 text-center z-30">
+                <div class="text-6xl mb-3">🚀</div>
+                <h2 class="text-3xl text-yellow-400 font-bold mb-2">우주 대탈출</h2>
+                <p class="text-sm text-slate-300 mb-4 leading-relaxed">
+                    운석을피해 살아남으세요
+                </p>
+
+                <!-- Controls Guide Section -->
+                <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 mb-6 w-full max-w-xs text-xs text-slate-300 space-y-1.5 shadow-inner">
+                    <div class="text-yellow-300 font-bold mb-1 text-sm">🎮 조작 방법</div>
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-slate-400">PC 키보드:</span>
+                        <span class="font-mono bg-slate-800 border border-slate-600 px-1.5 py-0.5 rounded text-yellow-200">방향키 / WASD</span>
+                    </div>
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-slate-400">일시정지:</span>
+                        <span class="font-mono bg-slate-800 border border-slate-600 px-1.5 py-0.5 rounded text-yellow-200">P 키</span>
+                    </div>
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-slate-400">모바일:</span>
+                        <span class="text-yellow-200">하단 터치 버튼</span>
+                    </div>
+                </div>
+
+                <button id="startButton" class="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-bold px-8 py-3 rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 cursor-pointer">
+                    시작
+                </button>
+            </div>
+
+            <!-- Pause Screen Overlay -->
+            <div id="pauseScreen" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-6 text-center z-30 hidden">
+                <div class="text-6xl mb-3">⏸️</div>
+                <h2 class="text-3xl text-yellow-400 font-bold mb-2">일시정지</h2>
+                <p class="text-sm text-slate-300 mb-4 leading-relaxed">
+                    게임이 잠시 멈췄습니다.<br>
+                    다시 진행하려면 <span class="text-yellow-300 font-bold">'P' 키</span>를 누르세요.
+                </p>
+            </div>
+
+            <!-- Game Over / Victory Overlay -->
+            <div id="endScreen" class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-6 text-center hidden z-10">
+                <div id="endIcon" class="text-6xl mb-2">🏆</div>
+                <h2 id="endTitle" class="text-3xl font-bold mb-2 text-yellow-400">승리!</h2>
+                <p id="endDesc" class="text-sm text-slate-300 mb-4">우주를 안전하게 탈출했습니다!</p>
+                <p class="text-xs text-yellow-300/80 mb-6 animate-pulse">[R] 키를 누르시면 시작 화면으로 이동합니다.</p>
+                <button id="restartButton" class="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-bold px-8 py-3 rounded-full text-lg shadow-lg transform transition hover:scale-105 active:scale-95 cursor-pointer">
+                    시작 화면으로
+                </button>
+            </div>
         </div>
 
-        <div id="gameover-screen" style="display: none;">
-            <h1>GAME OVER</h1>
-            <p id="final-score">버틴 시간: 0.0초 (0점)</p>
-            <p id="gameover-highscore" style="color: #f59e0b; font-weight: bold; font-size: 16px; margin-top: -10px; margin-bottom: 20px;">최고 점수: 0점</p>
-            <button class="btn" onclick="startGame()">다시 하기</button>
-        </div>
-    </div>
-
-    <div class="mobile-controls">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 100%; max-width: 300px; margin: 0 auto;">
-            <div></div>
-            <button class="ctrl-btn" id="up-btn" style="width: 100%; height: 50px;">▲</button>
-            <div></div>
-            <button class="ctrl-btn" id="left-btn" style="width: 100%; height: 50px;">◀</button>
-            <button class="ctrl-btn" id="down-btn" style="width: 100%; height: 50px;">▼</button>
-            <button class="ctrl-btn" id="right-btn" style="width: 100%; height: 50px;">▶</button>
+        <!-- Controls helper for mobile -->
+        <div class="hidden">
+            <button id="oldUpBtn"></button>
+            <button id="oldDownBtn"></button>
+            <button id="oldLeftBtn"></button>
+            <button id="oldRightBtn"></button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        window.onload = function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
 
-        // Web Audio Context & Synthesizer setup
-        let audioCtx = null;
-        let bgmInterval = null;
+            const startScreen = document.getElementById('startScreen');
+            const pauseScreen = document.getElementById('pauseScreen');
+            const endScreen = document.getElementById('endScreen');
+            const startButton = document.getElementById('startButton');
+            const restartButton = document.getElementById('restartButton');
+            const endTitle = document.getElementById('endTitle');
+            const endDesc = document.getElementById('endDesc');
+            const endIcon = document.getElementById('endIcon');
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const upBtn = document.getElementById('upBtn');
+            const downBtn = document.getElementById('downBtn');
+            const soundToggleBtn = document.getElementById('soundToggleBtn');
 
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
+            // Audio setup
+            let isMuted = false;
+            let audioEnabled = false;
 
-        // BGM Sequencer matching energetic synth vibe
-        function startBGM() {
-            stopBGM();
-            let noteIndex = 0;
-            const notes = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63]; // Bassline arpeggio
-            
-            bgmInterval = setInterval(() => {
-                if (gameState !== 'PLAYING' || !audioCtx) return;
-                
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
-                osc.type = 'sawtooth';
-                let freq = notes[noteIndex % notes.length];
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
-                
-                noteIndex++;
-            }, 160);
-        }
+            const bgmAudio = new Audio();
+            bgmAudio.src = 'sounds/bgm.mp3'; // ogg 또는 mp3 호환 처리
+            bgmAudio.loop = true;
+            bgmAudio.onerror = () => { bgmAudio.src = 'sounds/bgm.ogg'; };
 
-        function stopBGM() {
-            if (bgmInterval) {
-                clearInterval(bgmInterval);
-                bgmInterval = null;
-            }
-        }
-
-        // 100점 단위 달성 시 재생되는 "잘했어요!!" 팬파레 효과음
-        function playPraiseSFX() {
-            if (!audioCtx) return;
-
-            // 경쾌하고 밝은 3연음 팬파레 (도-미-솔-도)
-            const notes = [523.25, 659.25, 783.99, 1046.50]; 
-            const times = [0, 0.08, 0.16, 0.26];
-            const durations = [0.1, 0.1, 0.1, 0.35];
-
-            notes.forEach((freq, i) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + times[i]);
-
-                gain.gain.setValueAtTime(0, audioCtx.currentTime + times[i]);
-                gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + times[i] + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + times[i] + durations[i]);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start(audioCtx.currentTime + times[i]);
-                osc.stop(audioCtx.currentTime + times[i] + durations[i]);
-            });
-        }
-
-        // 점수 획득 / 레벨업 시 재생되는 경쾌한 효과음
-        function playScoreSFX(isLevelUp = false) {
-            if (!audioCtx) return;
-
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-
-            osc.type = 'sine';
-            
-            // 일반 점수 획득시 및 레벨업 시 음고 차별화
-            let startFreq = isLevelUp ? 587.33 : 440; // D5 vs A4
-            let endFreq = isLevelUp ? 880 : 659.25;   // A5 vs E5
-            
-            osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + (isLevelUp ? 0.2 : 0.12));
-
-            gain.gain.setValueAtTime(isLevelUp ? 0.18 : 0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (isLevelUp ? 0.2 : 0.12));
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + (isLevelUp ? 0.2 : 0.12));
-        }
-
-        // Play explosion sound on collision
-        function playExplosionSFX() {
-            if (!audioCtx) return;
-
-            // White noise generation for explosion sound
-            let bufferSize = audioCtx.sampleRate * 0.5;
-            let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            let data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
+            function playSound(src) {
+                if (isMuted || !audioEnabled) return;
+                try {
+                    const sound = new Audio(src);
+                    sound.currentTime = 0;
+                    sound.play().catch(() => {});
+                } catch (e) {}
             }
 
-            let noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
-
-            let filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(800, audioCtx.currentTime);
-            filter.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5);
-
-            let gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            noise.start();
-            noise.stop(audioCtx.currentTime + 0.5);
-        }
-
-        // 이미지 로드 (플레이어, 장애물)
-        const playerImg = new Image();
-        playerImg.src = 'player.png';
-        let playerImgLoaded = false;
-        playerImg.onload = () => { playerImgLoaded = true; };
-
-        const obstacleImg = new Image();
-        obstacleImg.src = 'wkddoanf.png';
-        let obstacleImgLoaded = false;
-        obstacleImg.onload = () => { obstacleImgLoaded = true; };
-
-        // 게임 상태 변수
-        let gameState = 'START'; // START, PLAYING, GAMEOVER
-        let score = 0;
-        let level = 1;
-        let lastScoreCheckpoint = 0; // 점수 획득 효과용 이전 점수 기록
-        let lastPraiseCheckpoint = 0; // 100점 단위 "잘했어요!!" 효과음 체크 포인트
-        let lastLevel10Checkpoint = 0; // 레벨 10 단위 화면 반짝임 체크 포인트
-        let highScore = localStorage.getItem('space_dodge_highscore') || 0;
-        let startTime = 0;
-        let elapsedTime = 0;
-
-        // 장애물 회피 시 플레이어 커짐 및 반짝임 효과 타이머 설정
-        let dodgeAnimTimer = 0; // 프레임 단위 카운터 (예: 15프레임 동안 애니메이션)
-        const DODGE_ANIM_DURATION = 15;
-
-        // 플레이어 설정 (가로 60 × 세로 60)
-        let player = {
-            x: canvas.width / 2 - 30,
-            y: canvas.height - 90,
-            width: 60,
-            height: 60,
-            speed: 6
-        };
-
-        let obstacles = [];
-        let fadingObstacles = []; // 회피 성공 후 크기 커지며 사라지는 장애물 이펙트 배열
-        let spawnTimer = 0;
-        let spawnInterval = 60;
-
-        let keys = { left: false, right: false, up: false, down: false };
-
-        document.getElementById('highscore-display').innerText = `최고: ${Math.floor(highScore)}점`;
-
-        // 키보드 이벤트 입력
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
-        });
-
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
-        });
-
-        // 모바일 터치/클릭 버튼 바인딩
-        const setupTouchBtn = (id, direction) => {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[direction] = true; });
-            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[direction] = false; });
-            btn.addEventListener('mousedown', () => { keys[direction] = true; });
-            btn.addEventListener('mouseup', () => { keys[direction] = false; });
-            btn.addEventListener('mouseleave', () => { keys[direction] = false; });
-        };
-        setupTouchBtn('left-btn', 'left');
-        setupTouchBtn('right-btn', 'right');
-        setupTouchBtn('up-btn', 'up');
-        setupTouchBtn('down-btn', 'down');
-
-        //캔버스 터치 조작 (드래그/터치 좌표 추적)
-        let isTouchingCanvas = false;
-        let touchTargetX = null;
-        let touchTargetY = null;
-
-        function handleCanvasTouch(e) {
-            if (gameState !== 'PLAYING') return;
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            if (!touch) return;
-            
-            // 캔버스 내에서의 터치 X, Y 좌표 (비율 계산)
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            touchTargetX = (touch.clientX - rect.left) * scaleX;
-            touchTargetY = (touch.clientY - rect.top) * scaleY;
-            isTouchingCanvas = true;
-        }
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleCanvasTouch(e);
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            handleCanvasTouch(e);
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            isTouchingCanvas = false;
-            touchTargetX = null;
-            touchTargetY = null;
-        });
-
-        canvas.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
-            isTouchingCanvas = false;
-            touchTargetX = null;
-            touchTargetY = null;
-        });
-
-        function startGame() {
-            initAudio();
-            startBGM();
-
-            // 이전 흔들림 효과 제거
-            const container = document.getElementById('game-container');
-            container.classList.remove('shake');
-
-            gameState = 'PLAYING';
-            score = 0;
-            level = 1;
-            lastScoreCheckpoint = 0;
-            lastPraiseCheckpoint = 0;
-            lastLevel10Checkpoint = 0;
-            dodgeAnimTimer = 0;
-            obstacles = [];
-            fadingObstacles = [];
-            spawnTimer = 0;
-            spawnInterval = 60;
-            player.x = canvas.width / 2 - 30;
-            player.y = canvas.height - 90;
-            startTime = Date.now();
-            
-            document.getElementById('praise-container').innerHTML = '';
-            document.getElementById('score-display').innerText = `점수: 0점`;
-            document.getElementById('level-display').innerText = `LV: 1`;
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('gameover-screen').style.display = 'none';
-            
-            requestAnimationFrame(updateGame);
-        }
-
-        function triggerPraiseEffect() {
-            playPraiseSFX();
-
-            // "잘했어요!!" 화면 연출 텍스트 생성
-            const container = document.getElementById('praise-container');
-            const praiseEl = document.createElement('div');
-            praiseEl.className = 'praise-text';
-            praiseEl.innerText = '잘했어요!! 🎉';
-            container.appendChild(praiseEl);
-
-            // 애니메이션 종료 후 요소 삭제
-            setTimeout(() => {
-                if (praiseEl.parentNode) {
-                    praiseEl.parentNode.removeChild(praiseEl);
-                }
-            }, 1200);
-        }
-
-        function triggerScoreEffects(isLevelUp) {
-            playScoreSFX(isLevelUp);
-
-            // 점수 UI 텍스트 반짝임 팝 애니메이션 적용
-            const scoreElem = document.getElementById('score-display');
-            const levelElem = document.getElementById('level-display');
-            
-            scoreElem.classList.remove('score-pop');
-            void scoreElem.offsetWidth; // reflow
-            scoreElem.classList.add('score-pop');
-
-            if (isLevelUp) {
-                levelElem.classList.remove('score-pop');
-                void levelElem.offsetWidth;
-                levelElem.classList.add('score-pop');
+            function playBGM() {
+                if (isMuted || !audioEnabled) return;
+                try {
+                    bgmAudio.currentTime = 0;
+                    bgmAudio.play().catch(() => {});
+                } catch (e) {}
             }
 
-            // 테두리 빛 반짝임 오버레이 트리거
-            const flash = document.getElementById('flash-effect');
-            flash.classList.remove('flash-overlay');
-            void flash.offsetWidth;
-            flash.classList.add('flash-overlay');
-        }
-
-        // 레벨 10 단위 달성 시 강렬한 화면 전체 반짝임 연출
-        function triggerLevel10FlashEffect() {
-            const flash = document.getElementById('flash-effect');
-            flash.classList.remove('flash-overlay', 'level10-flash-overlay');
-            void flash.offsetWidth; // reflow
-            flash.classList.add('level10-flash-overlay');
-        }
-
-        function updateGame() {
-            if (gameState !== 'PLAYING') return;
-
-            let currentTime = Date.now();
-            elapsedTime = (currentTime - startTime) / 1000;
-            
-            let newScore = Math.floor(elapsedTime * 10);
-            let newLevel = Math.floor(newScore / 10) + 1;
-
-            // 100점 돌파 시 "잘했어요!!" 효과음 및 연출
-            if (newScore > 0 && Math.floor(newScore / 100) > lastPraiseCheckpoint) {
-                lastPraiseCheckpoint = Math.floor(newScore / 100);
-                triggerPraiseEffect();
+            function pauseBGM() {
+                try {
+                    bgmAudio.pause();
+                } catch (e) {}
             }
 
-            // 레벨이 10 오를 때마다(LV 10, LV 20, LV 30 ...) 화면 전체 강렬하게 반짝임 효과
-            if (newLevel >= 10 && Math.floor(newLevel / 10) > lastLevel10Checkpoint) {
-                lastLevel10Checkpoint = Math.floor(newLevel / 10);
-                triggerLevel10FlashEffect();
+            function stopBGM() {
+                try {
+                    bgmAudio.pause();
+                    bgmAudio.currentTime = 0;
+                } catch (e) {}
             }
 
-            // 10점 단위로 점수가 오르거나 레벨이 오를 때 효과음 및 반짝임 적용
-            if (newScore > lastScoreCheckpoint && newScore % 10 === 0) {
-                let isLevelUp = newLevel > level;
-                triggerScoreEffects(isLevelUp);
-                lastScoreCheckpoint = newScore;
-            }
-
-            score = newScore;
-            level = newLevel;
-
-            document.getElementById('score-display').innerText = `점수: ${score}점`;
-            document.getElementById('level-display').innerText = `LV: ${level}`;
-
-            // 난이도 상승 (레벨 및 시간 지남에 따라 생성 속도 빨라짐)
-            spawnInterval = Math.max(15, 60 - Math.floor(elapsedTime * 1.5));
-
-            // 플레이어 이동 (상하좌우 키보드 / 버튼 / 터치 지원)
-            if (keys.left) player.x -= player.speed;
-            if (keys.right) player.x += player.speed;
-            if (keys.up) player.y -= player.speed;
-            if (keys.down) player.y += player.speed;
-
-            // Direct Touch tracking logic (터치 위치로 부드럽게 이동)
-            if (isTouchingCanvas && touchTargetX !== null && touchTargetY !== null) {
-                const playerCenterX = player.x + player.width / 2;
-                const playerCenterY = player.y + player.height / 2;
-                
-                const diffX = touchTargetX - playerCenterX;
-                const diffY = touchTargetY - playerCenterY;
-                
-                if (Math.abs(diffX) > 4) {
-                    player.x += Math.sign(diffX) * Math.min(Math.abs(diffX), player.speed);
-                }
-                if (Math.abs(diffY) > 4) {
-                    player.y += Math.sign(diffY) * Math.min(Math.abs(diffY), player.speed);
-                }
-            }
-
-            // 상하좌우 경계 제한
-            if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y < 0) player.y = 0;
-            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-            // 장애물 생성 (가로 60 × 세로 60 크기)
-            spawnTimer++;
-            if (spawnTimer >= spawnInterval) {
-                spawnTimer = 0;
-                let obsSize = 60;
-                let obsX = Math.random() * (canvas.width - obsSize);
-                
-                // 레벨 오를 때마다 속도 10% 증가 (1.1^(level - 1))
-                let speedMultiplier = Math.pow(1.1, level - 1);
-                let baseSpeed = 3 + Math.min(5, elapsedTime * 0.1);
-                let obsSpeed = baseSpeed * speedMultiplier;
-
-                obstacles.push({
-                    x: obsX,
-                    y: -obsSize,
-                    width: obsSize,
-                    height: obsSize,
-                    speed: obsSpeed
+            if (soundToggleBtn) {
+                soundToggleBtn.addEventListener('click', () => {
+                    isMuted = !isMuted;
+                    soundToggleBtn.innerText = isMuted ? '🔇' : '🔊';
+                    if (isMuted) {
+                        pauseBGM();
+                    } else if (gameState === 'PLAYING') {
+                        playBGM();
+                    }
                 });
             }
 
-            // 장애물 이동 및 충돌 체크 (60x60 영역 기준)
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                let obs = obstacles[i];
-                obs.y += obs.speed;
+            // Images Setup
+            const playerImg = new Image();
+            playerImg.src = 'images/player.png';
+            let playerLoaded = false;
+            playerImg.onload = () => { playerLoaded = true; };
 
-                // 장애물이 화면 아래로 무사히 통과하여 피했을 때
-                if (obs.y > canvas.height) {
-                    // 커지면서 사라지는 이펙트 목록에 추가
-                    fadingObstacles.push({
-                        x: obs.x,
-                        y: obs.y,
-                        width: obs.width,
-                        height: obs.height,
-                        scale: 1.0,
-                        alpha: 1.0
-                    });
+            const enemyImg = new Image();
+            enemyImg.src = 'images/enemy.png';
+            let enemyLoaded = false;
+            enemyImg.onload = () => { enemyLoaded = true; };
 
-                    obstacles.splice(i, 1);
-                    dodgeAnimTimer = DODGE_ANIM_DURATION; // 회피 효과 타이머 가동
-                    continue;
+            const bgImg = new Image();
+            bgImg.src = 'images/background.png';
+            let bgLoaded = false;
+            bgImg.onload = () => { bgLoaded = true; };
+
+            // Game State Variables
+            let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER, VICTORY
+            let score = 0;
+            const targetScore = 1000;
+            let lives = 3;
+            let lastTime = 0;
+            let meteorSpawnTimer = 0;
+            let elapsedTime = 0; // Total play time in seconds for speed scaling
+            // Stars background array (fallback if background image is not loaded)
+            const stars = [];
+            for (let i = 0; i < 80; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speed: Math.random() * 2 + 0.5
+                });
+            }
+
+            // Cat Player Object
+            const cat = {
+                x: canvas.width / 2 - 30,
+                y: canvas.height - 90,
+                width: 60,
+                height: 60,
+                speed: 7
+            };
+
+            // Meteors Array
+            let meteors = [];
+
+            // Input handlers
+            const keys = {
+                ArrowLeft: false,
+                ArrowRight: false,
+                ArrowUp: false,
+                ArrowDown: false
+            };
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = true;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = true;
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = true;
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = true;
+
+                // Toggle Pause (P Key)
+                if (e.key === 'p' || e.key === 'P') {
+                    if (gameState === 'PLAYING') {
+                        gameState = 'PAUSED';
+                        if (pauseScreen) pauseScreen.classList.remove('hidden');
+                        pauseBGM();
+                    } else if (gameState === 'PAUSED') {
+                        gameState = 'PLAYING';
+                        if (pauseScreen) pauseScreen.classList.add('hidden');
+                        lastTime = performance.now();
+                        playBGM();
+                    }
                 }
 
-                // AABB 정확한 60x60 충돌 감지
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y
-                ) {
-                    gameOver();
+                // Return to Start Screen (R Key from GameOver or Victory)
+                if (e.key === 'r' || e.key === 'R') {
+                    if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
+                        goToStartScreen();
+                    }
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.ArrowLeft = false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.ArrowRight = false;
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.ArrowUp = false;
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.ArrowDown = false;
+            });
+
+            // Touch / Mouse button handlers for mobile/desktop UI
+            const setTouchLeft = (isDown) => { keys.ArrowLeft = isDown; };
+            const setTouchRight = (isDown) => { keys.ArrowRight = isDown; };
+            const setTouchUp = (isDown) => { keys.ArrowUp = isDown; };
+            const setTouchDown = (isDown) => { keys.ArrowDown = isDown; };
+
+            if (leftBtn) {
+                leftBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setTouchLeft(true); });
+                leftBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setTouchLeft(false); });
+                leftBtn.addEventListener('mouseleave', (e) => { e.preventDefault(); setTouchLeft(false); });
+                leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setTouchLeft(true); });
+                leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); setTouchLeft(false); });
+            }
+
+            if (rightBtn) {
+                rightBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setTouchRight(true); });
+                rightBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setTouchRight(false); });
+                rightBtn.addEventListener('mouseleave', (e) => { e.preventDefault(); setTouchRight(false); });
+                rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setTouchRight(true); });
+                rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); setTouchRight(false); });
+            }
+
+            if (upBtn) {
+                upBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setTouchUp(true); });
+                upBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setTouchUp(false); });
+                upBtn.addEventListener('mouseleave', (e) => { e.preventDefault(); setTouchUp(false); });
+                upBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setTouchUp(true); });
+                upBtn.addEventListener('touchend', (e) => { e.preventDefault(); setTouchUp(false); });
+            }
+
+            if (downBtn) {
+                downBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setTouchDown(true); });
+                downBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setTouchDown(false); });
+                downBtn.addEventListener('mouseleave', (e) => { e.preventDefault(); setTouchDown(false); });
+                downBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setTouchDown(true); });
+                downBtn.addEventListener('touchend', (e) => { e.preventDefault(); setTouchDown(false); });
+            }
+
+            // Start game / Restart handlers
+            if (startButton) startButton.addEventListener('click', startGame);
+            if (restartButton) restartButton.addEventListener('click', goToStartScreen);
+
+            function goToStartScreen() {
+                gameState = 'START';
+                stopBGM();
+                if (pauseScreen) pauseScreen.classList.add('hidden');
+                if (endScreen) endScreen.classList.add('hidden');
+                if (startScreen) startScreen.classList.remove('hidden');
+            }
+
+            function startGame() {
+                audioEnabled = true;
+                gameState = 'PLAYING';
+                score = 0;
+                lives = 3;
+                meteors = [];
+                cat.x = canvas.width / 2 - cat.width / 2;
+                cat.y = canvas.height - 90;
+                meteorSpawnTimer = 0;
+                elapsedTime = 0;
+                lastTime = performance.now();
+                if (startScreen) startScreen.classList.add('hidden');
+                if (pauseScreen) pauseScreen.classList.add('hidden');
+                if (endScreen) endScreen.classList.add('hidden');
+
+                playBGM();
+            }
+
+            function gameOver(isWin) {
+                gameState = isWin ? 'VICTORY' : 'GAMEOVER';
+                stopBGM();
+
+                if (!isWin) {
+                    playSound('sounds/gameover.ogg');
+                }
+
+                if (endScreen) endScreen.classList.remove('hidden');
+                if (isWin) {
+                    if (endIcon) endIcon.innerText = '🎉';
+                    if (endTitle) {
+                        endTitle.innerText = '임무 성공!';
+                        endTitle.className = 'text-3xl font-bold mb-2 text-green-400';
+                    }
+                    if (endDesc) endDesc.innerText = `${targetScore}점을 달성하여 우주를 탈출했습니다!`;
+                } else {
+                    if (endIcon) endIcon.innerText = '💥';
+                    if (endTitle) {
+                        endTitle.innerText = '게임 오버';
+                        endTitle.className = 'text-3xl font-bold mb-2 text-red-400';
+                    }
+                    if (endDesc) endDesc.innerText = `운석 충돌로 탈출 실패! (최종 점수: ${Math.floor(score)}점 / Lv.${Math.floor(score / 50) + 1})`;
+                }
+            }
+
+            // Spawn meteor function
+            function spawnMeteor() {
+                const width = 50;
+                const height = 50;
+                // Calculate 10% speed increase every 30 seconds: (1.10)^(elapsedTime / 30)
+                const speedMultiplier = Math.pow(1.10, Math.floor(elapsedTime / 30));
+                const baseSpeed = Math.random() * 3 + 3 + (score / 50);
+                
+                meteors.push({
+                    x: Math.random() * (canvas.width - width),
+                    y: -height,
+                    width: width,
+                    height: height,
+                    speed: baseSpeed * speedMultiplier,
+                    rotation: Math.random() * Math.PI,
+                    rotSpeed: (Math.random() - 0.5) * 0.05
+                });
+            }
+
+            // Update game logic
+            function update(timestamp) {
+                if (gameState !== 'PLAYING') return;
+
+                const deltaTime = (timestamp - lastTime) / 1000;
+                lastTime = timestamp;
+
+                elapsedTime += deltaTime;
+
+                // Increase score over time (approx 10 points per second)
+                score += deltaTime * 10;
+                if (score >= targetScore) {
+                    score = targetScore;
+                    gameOver(true);
                     return;
                 }
-            }
 
-            // 커지면서 투명하게 사라지는 장애물 애니메이션 업데이트
-            for (let i = fadingObstacles.length - 1; i >= 0; i--) {
-                let fObs = fadingObstacles[i];
-                fObs.scale += 0.05; // 점점 커짐
-                fObs.alpha -= 0.05; // 점점 투명해짐
+                // Player Movement
+                if (keys.ArrowLeft) cat.x -= cat.speed;
+                if (keys.ArrowRight) cat.x += cat.speed;
+                if (keys.ArrowUp) cat.y -= cat.speed;
+                if (keys.ArrowDown) cat.y += cat.speed;
 
-                if (fObs.alpha <= 0) {
-                    fadingObstacles.splice(i, 1);
+                // Screen boundaries for Player
+                if (cat.x < 0) cat.x = 0;
+                if (cat.x + cat.width > canvas.width) cat.x = canvas.width - cat.width;
+                if (cat.y < 0) cat.y = 0;
+                if (cat.y + cat.height > canvas.height) cat.y = canvas.height - cat.height;
+
+                // Spawn meteors
+                meteorSpawnTimer += deltaTime;
+                if (meteorSpawnTimer > 0.6) {
+                    spawnMeteor();
+                    meteorSpawnTimer = 0;
+                }
+
+                // Update meteors & check collision (80% hitbox)
+                for (let i = meteors.length - 1; i >= 0; i--) {
+                    const m = meteors[i];
+                    m.y += m.speed;
+                    m.rotation += m.rotSpeed;
+
+                    // 80% Hitbox Collision Detection
+                    const playerHitbox = {
+                        x: cat.x + cat.width * 0.1,
+                        y: cat.y + cat.height * 0.1,
+                        width: cat.width * 0.8,
+                        height: cat.height * 0.8
+                    };
+
+                    const meteorHitbox = {
+                        x: m.x + m.width * 0.1,
+                        y: m.y + m.height * 0.1,
+                        width: m.width * 0.8,
+                        height: m.height * 0.8
+                    };
+
+                    if (
+                        playerHitbox.x < meteorHitbox.x + meteorHitbox.width &&
+                        playerHitbox.x + playerHitbox.width > meteorHitbox.x &&
+                        playerHitbox.y < meteorHitbox.y + meteorHitbox.height &&
+                        playerHitbox.y + playerHitbox.height > meteorHitbox.y
+                    ) {
+                        // Collision!
+                        meteors.splice(i, 1);
+                        lives--;
+                        playSound('sounds/hit.ogg');
+
+                        if (lives <= 0) {
+                            gameOver(false);
+                            return;
+                        }
+                        continue;
+                    }
+
+                    // Remove meteors below canvas
+                    if (m.y > canvas.height + 50) {
+                        meteors.splice(i, 1);
+                    }
                 }
             }
 
+            // Render game elements
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw background (Image or fallback starfield)
+                if (bgLoaded) {
+                    const pattern = ctx.createPattern(bgImg, 'repeat');
+                    ctx.fillStyle = pattern;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    stars.forEach(star => {
+                        if (gameState === 'PLAYING') {
+                            star.y += star.speed;
+                            if (star.y > canvas.height) star.y = 0;
+                        }
+                        ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+                        ctx.fillRect(star.x, star.y, star.size, star.size);
+                    });
+                    ctx.globalAlpha = 1.0;
+                }
+
+                // Draw Player (Image or Fallback vector cat)
+                if (playerLoaded) {
+                    ctx.drawImage(playerImg, cat.x, cat.y, cat.width, cat.height);
+                } else {
+                    const cx = cat.x + cat.width / 2;
+                    const cy = cat.y + cat.height / 2;
+
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.roundRect(cat.x + 15, cat.y + 20, 30, 35, 10);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ea580c';
+                    ctx.beginPath();
+                    ctx.moveTo(cat.x + 17, cat.y + 22);
+                    ctx.lineTo(cat.x + 10, cat.y + 8);
+                    ctx.lineTo(cat.x + 27, cat.y + 18);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(cat.x + 43, cat.y + 22);
+                    ctx.lineTo(cat.x + 50, cat.y + 8);
+                    ctx.lineTo(cat.x + 33, cat.y + 18);
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.fillStyle = 'rgba(135, 206, 250, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy - 2, 24, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(cx - 6, cy - 10, 8, Math.PI * 1.2, Math.PI * 1.8);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(cx - 7, cy - 6, 4, 4);
+                    ctx.fillRect(cx + 3, cy - 6, 4, 4);
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.fillRect(cx - 1, cy, 2, 2);
+                }
+
+                // Draw Meteors (Image or Fallback vector meteor)
+                meteors.forEach(m => {
+                    ctx.save();
+                    ctx.translate(m.x + m.width / 2, m.y + m.height / 2);
+                    ctx.rotate(m.rotation);
+
+                    if (enemyLoaded) {
+                        ctx.drawImage(enemyImg, -m.width / 2, -m.height / 2, m.width, m.height);
+                    } else {
+                        const radius = m.width / 2;
+                        ctx.fillStyle = '#64748b';
+                        ctx.strokeStyle = '#334155';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        const points = 7;
+                        for (let i = 0; i < points; i++) {
+                            const angle = (i / points) * Math.PI * 2;
+                            const r = radius * (0.8 + Math.sin(i * 3) * 0.2);
+                            const px = Math.cos(angle) * r;
+                            const py = Math.sin(angle) * r;
+                            if (i === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#475569';
+                        ctx.beginPath();
+                        ctx.arc(-radius * 0.3, -radius * 0.2, radius * 0.25, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                });
+
+                // Draw HUD (Score, Level & Lives)
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                ctx.fillRect(10, 10, canvas.width - 20, 45);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(10, 10, canvas.width - 20, 45);
+
+                const currentLevel = Math.floor(score / 50) + 1;
+
+                // Score & Level text
+                ctx.fillStyle = '#facc15';
+                ctx.font = '18px Jua';
+                ctx.textAlign = 'left';
+                ctx.fillText(`⭐ Lv.${currentLevel} | 점수: ${Math.floor(score)} / ${targetScore}`, 20, 38);
+
+                // Lives hearts
+                ctx.textAlign = 'right';
+                let hearts = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+                ctx.fillText(`생명: ${hearts}`, canvas.width - 20, 38);
+            }
+
+            // Main Game Loop
+            function gameLoop(timestamp) {
+                update(timestamp);
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            // Initial render call
             draw();
-            requestAnimationFrame(updateGame);
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 장애물을 성공적으로 피했을 때 확대 및 반짝임 연출
-            let scale = 1.0;
-            let glowAlpha = 0;
-
-            if (dodgeAnimTimer > 0) {
-                // 커지는 스케일 (최대 1.35배) 및 글로우 알파값 계산
-                let progress = dodgeAnimTimer / DODGE_ANIM_DURATION;
-                scale = 1.0 + Math.sin(progress * Math.PI) * 0.35;
-                glowAlpha = Math.sin(progress * Math.PI);
-                dodgeAnimTimer--;
-            }
-
-            ctx.save();
-            // 플레이어 중심점으로 좌표 변환 후 커짐 연출
-            let centerX = player.x + player.width / 2;
-            let centerY = player.y + player.height / 2;
-            ctx.translate(centerX, centerY);
-            ctx.scale(scale, scale);
-
-            // 반짝이는 후광(Glow) 효과 적용
-            if (glowAlpha > 0) {
-                ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 25 * glowAlpha;
-            }
-
-            // 플레이어 렌더링 (가로 60 x 세로 60)
-            if (playerImgLoaded) {
-                ctx.drawImage(playerImg, -player.width / 2, -player.height / 2, player.width, player.height);
-            } else {
-                ctx.font = '50px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('👨‍🚀', 0, 0);
-            }
-
-            ctx.restore();
-
-            // 장애물 렌더링 (가로 60 x 세로 60)
-            for (let obs of obstacles) {
-                if (obstacleImgLoaded) {
-                    ctx.drawImage(obstacleImg, obs.x, obs.y, obs.width, obs.height);
-                } else {
-                    ctx.font = '50px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('☄️', obs.x + obs.width / 2, obs.y + obs.height / 2);
-                }
-            }
-
-            // 피해서 커지며 사라지는 장애물 연출 렌더링
-            for (let fObs of fadingObstacles) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, fObs.alpha);
-                
-                let fCenterX = fObs.x + fObs.width / 2;
-                let fCenterY = fObs.y + fObs.height / 2;
-                
-                ctx.translate(fCenterX, fCenterY);
-                ctx.scale(fObs.scale, fObs.scale);
-
-                if (obstacleImgLoaded) {
-                    ctx.drawImage(obstacleImg, -fObs.width / 2, -fObs.height / 2, fObs.width, fObs.height);
-                } else {
-                    ctx.font = '50px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('☄️', 0, 0);
-                }
-                ctx.restore();
-            }
-        }
-
-        function gameOver() {
-            stopBGM();
-            playExplosionSFX();
-            gameState = 'GAMEOVER';
-
-            // 충돌 시 화면 흔들림 효과(Shake) 적용
-            const container = document.getElementById('game-container');
-            container.classList.remove('shake');
-            // reflow 트리거 후 클래스 재추가
-            void container.offsetWidth;
-            container.classList.add('shake');
-            
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('space_dodge_highscore', highScore);
-            }
-
-            document.getElementById('highscore-display').innerText = `최고: ${highScore}점`;
-            document.getElementById('final-score').innerText = `버틴 시간: ${elapsedTime.toFixed(1)}초 (${score}점)`;
-            document.getElementById('gameover-highscore').innerText = `최고 점수: ${highScore}점`;
-            document.getElementById('gameover-screen').style.display = 'flex';
-        }
+            requestAnimationFrame(gameLoop);
+        };
     </script>
 </body>
 </html>
